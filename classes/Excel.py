@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 class Excel:
-    def __init__(self):
+    def __init__(self, data):
         file_path = Path("data/Soilcover.xlsx")
 
         if file_path.exists():

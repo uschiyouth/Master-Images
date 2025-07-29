@@ -1,6 +1,7 @@
+from classes.Data import Data
 from classes.Excel import Excel
 from classes.Image import ImageLoader
 
-image = ImageLoader()
-
-excel = Excel()
+data = Data()
+image = ImageLoader(data)
+excel = Excel(data)

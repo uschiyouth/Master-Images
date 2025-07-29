@@ -1,47 +1,78 @@
 import os
 import tkinter as tk
+from tkinter import ttk
 from PIL import ExifTags, ImageTk, ImageDraw, Image, ImageFont
 from pathlib import Path
 
 
 class ImageLoader:
-    def __init__(self):
+    def __init__(self, data):
+        """
+        :author: Ruth Neeßen
+        creates the window with the image within a label element
+        and a dropdown within a frame
+        """
         self.img_folder = "img"
         self.current_main = 1
         self.current_sub = 1
         self.img_obj = None
 
+        self.data = data
+        self.data.main = 1
+        self.data.sub = 1
+
         self.root = tk.Tk()
-        self.root.title("Image Loader")
+        self.root.title("Monitoring 2025 Soil Cover")
+        self.root.geometry("1900x1070")
 
-        # Frame für Bild und Dropdowns
         self.main_frame = tk.Frame(self.root)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
+        # put the main frame to the cell 0, 0
+        self.main_frame.grid(row=0, column=0, sticky="nsew")
 
-        # Label fürs Bild
-        self.img_label = tk.Label(self.main_frame, bg='black')
-        self.img_label.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        # root window can resize main frame
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
 
-        # Frame für Dropdowns unter dem Bild
+        # Within the main frame dropdown is on pos 0
         self.dropdown_frame = tk.Frame(self.main_frame)
-        self.dropdown_frame.pack(side=tk.TOP, pady=10)
+        self.dropdown_frame.grid(row=0, column=0, pady=10, sticky="ew")
 
-        # Optionen der Dropdowns
-        options = ["rock", "dirt", "native vegetation", "Phalaris"]
+        # Within the main frame image is on pos 1
+        self.img_label = tk.Label(self.main_frame, bg="black")
+        self.img_label.grid(row=1, column=0, sticky="nsew")
 
-        # Dictionary, um die StringVar für jeden Dropdown zu speichern
+        # dropdown has a fixed height
+        self.main_frame.grid_rowconfigure(0, weight=0)
+        # image grows
+        self.main_frame.grid_rowconfigure(1, weight=1)
+        self.main_frame.grid_columnconfigure(0, weight=1)
+
+        # options in dropdowns
+        options = ["select","rock", "dirt", "native vegetation", "Phalaris"]
+
         self.dropdown_vars = {}
+        # to temporarily remove the callback later
+        self.dropdown_traces = {}
 
         for i in range(1, 5):
-            label = tk.Label(self.dropdown_frame, text=str(i))
+            text = "Position " + str(i)
+            label = tk.Label(self.dropdown_frame, text=text)
             label.grid(row=0, column=i - 1, padx=5)
 
-            var = tk.StringVar(value=options[0])  # Standardwert z.B. 'rock'
-            dropdown = tk.OptionMenu(self.dropdown_frame, var, *options)
-            dropdown.grid(row=1, column=i - 1, padx=5)
-            self.dropdown_vars[i] = var
+            var = tk.StringVar(value=options[0])
+            # trace_add save callback name
+            trace_name = var.trace_add('write', lambda *args, i=i: self.on_dropdown_change(i))
 
-        self.root.geometry("1900x1070")
+            combobox = ttk.Combobox(
+                self.dropdown_frame,
+                textvariable=var,
+                values=options,
+                state="readonly",
+            )
+            combobox.grid(row=1, column=i - 1, padx=5)
+
+            self.dropdown_vars[i] = var
+            self.dropdown_traces[i] = trace_name
 
         # Bind keys
         self.root.bind("<Right>", self.__show_next_image)
@@ -55,7 +86,7 @@ class ImageLoader:
 
         # Show the first image in the folder
         while not self.__image_exists(self.current_main, self.current_sub):
-            next = self.__find_next_image(self.current_main, self.current_sub)
+            next = self.__find_next_image(self.current_main, self.current_sub, 'next')
             if next == (None, None):
                 break
             self.current_main, self.current_sub = next
@@ -63,6 +94,11 @@ class ImageLoader:
 
         #window loop
         self.root.mainloop()
+
+    def on_dropdown_change(self, index, *args):
+        print("dropdown changed")
+        selected_value = self.dropdown_vars[index].get()
+        self.data.set_field(selected_value)
 
     def __close(self, event=None):
         """
@@ -106,6 +142,9 @@ class ImageLoader:
                 if main < 1:
                     return None, None
             if self.__image_exists(main, sub):
+                self.data.main = main
+                self.data.sub = sub
+
                 return main, sub
 
     def __load_landscape_image(self, path, max_width, max_height):
@@ -208,12 +247,26 @@ class ImageLoader:
         Determines the next or previous image and updates current_main and current_sub
         Triggers the display of the next or previous image depending on the key pressed
         """
-        if event.keycode == 114:
-            next = self.__find_next_image(self.current_main, self.current_sub, 'next')
-        elif event.keycode == 113:
-            next = self.__find_next_image(self.current_main, self.current_sub, 'prev')
-        if next != (None, None):
-            self.current_main, self.current_sub = next
-            self.__show_image(self.current_main, self.current_sub)
+        if self.data.get_total_lenght() == 16:
+            self.data.save()
+        elif self.data.get_field_length() < 4:
+            return
+        else:
+            if event.keycode == 114:
+                next = self.__find_next_image(self.current_main, self.current_sub, 'next')
+            elif event.keycode == 113:
+                next = self.__find_next_image(self.current_main, self.current_sub, 'prev')
+            if next != (None, None):
+                self.current_main, self.current_sub = next
+                self.__show_image(self.current_main, self.current_sub)
+                default_value = "select"
+
+                for i, var in self.dropdown_vars.items():
+                    # temporarily remove callback
+                    var.trace_remove('write', self.dropdown_traces[i])
+                    var.set(default_value)
+                    # add and save callback
+                    trace_name = var.trace_add('write', lambda *args, i=i: self.on_dropdown_change(i))
+                    self.dropdown_traces[i] = trace_name
 
 
