@@ -12,14 +12,13 @@ class ImageLoader:
         creates the window with the image within a label element
         and a dropdown within a frame
         """
+        self.data = data
+        self.data.sub = 1
+
         self.img_folder = "img"
-        self.current_main = 1
+        self.current_main = self.data.main
         self.current_sub = 1
         self.img_obj = None
-
-        self.data = data
-        self.data.main = 1
-        self.data.sub = 1
 
         self.root = tk.Tk()
         self.root.title("Monitoring 2025 Soil Cover")
@@ -96,8 +95,9 @@ class ImageLoader:
         self.root.mainloop()
 
     def on_dropdown_change(self, index, *args):
-        print("dropdown changed")
         selected_value = self.dropdown_vars[index].get()
+        if selected_value == "select":
+            return
         self.data.set_field(selected_value)
 
     def __close(self, event=None):
@@ -234,6 +234,7 @@ class ImageLoader:
         Puts the image object into the tinkers image label
         """
         path = os.path.join(self.img_folder, f"{main}_{sub}.jpg")
+        self.root.title(f"Monitoring 2025 Soil Cover - {main}_{sub}.jpg")
         max_width = self.root.winfo_screenwidth()
         max_height = self.root.winfo_screenheight()
         self.img_obj = self.__load_landscape_image(path, max_width, max_height)
@@ -249,6 +250,10 @@ class ImageLoader:
         """
         if self.data.get_total_lenght() == 16:
             self.data.save()
+            next = self.__find_next_image(self.current_main, self.current_sub, 'next')
+            self.current_main, self.current_sub = next
+            self.__show_image(self.current_main, self.current_sub)
+            self.reset_dropdown()
         elif self.data.get_field_length() < 4:
             return
         else:
@@ -259,14 +264,15 @@ class ImageLoader:
             if next != (None, None):
                 self.current_main, self.current_sub = next
                 self.__show_image(self.current_main, self.current_sub)
-                default_value = "select"
+                self.reset_dropdown()
 
-                for i, var in self.dropdown_vars.items():
-                    # temporarily remove callback
-                    var.trace_remove('write', self.dropdown_traces[i])
-                    var.set(default_value)
-                    # add and save callback
-                    trace_name = var.trace_add('write', lambda *args, i=i: self.on_dropdown_change(i))
-                    self.dropdown_traces[i] = trace_name
-
+    def reset_dropdown(self):
+        default_value = "select"
+        for i, var in self.dropdown_vars.items():
+            # temporarily remove callback
+            var.trace_remove('write', self.dropdown_traces[i])
+            var.set(default_value)
+            # add and save callback
+            trace_name = var.trace_add('write', lambda *args, i=i: self.on_dropdown_change(i))
+            self.dropdown_traces[i] = trace_name
 
