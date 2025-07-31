@@ -4,13 +4,16 @@ from tkinter import ttk
 from PIL import ExifTags, ImageTk, ImageDraw, Image, ImageFont
 from pathlib import Path
 
-
 class ImageLoader:
     def __init__(self, data):
         """
         :author: Ruth Neeßen
-        creates the window with the image within a label element
-        and a dropdown within a frame
+        :param data: Data, object contains the number of the current plot and picture
+        Creates a main window with title, size, and appropriate layout.
+        Creates a main frame and within it an area for the drop-down menus for classification (above) and  a label element for the image display (below).
+        Loads (if possible) the first image from the directory and displays it.
+        Provides keyboard shortcuts (<Right>, <Left>, <Escape>) for navigating and closing the application.
+        Starts the main event loop for the GUI.
         """
         self.data = data
         self.data.sub = 1
@@ -95,6 +98,11 @@ class ImageLoader:
         self.root.mainloop()
 
     def on_dropdown_change(self, index, *args):
+        """
+        :author: Ruth Neeßen
+        :param index: index of the current dropdown
+        :param args: Additional parameters passed by the Tkinter event system (ignored in this method).
+        """
         selected_value = self.dropdown_vars[index].get()
         if selected_value == "select":
             return
@@ -111,9 +119,9 @@ class ImageLoader:
     def __image_exists(self, main, sub):
         """
         :author: Ruth Neeßen
-        :param main: Integer, the first number in the image name
-        :param sub: Integer, the second number in the image name
-        checks if the image exists
+        :param main: Integer, the first number in the image name (plot number)
+        :param sub: Integer, the second number in the image name (1 ... 4, because we have 4 images at each plot)
+        Checks if the image exists
         """
         fname = f"{main}_{sub}.jpg"
         return os.path.isfile(os.path.join(self.img_folder, fname))
@@ -121,10 +129,11 @@ class ImageLoader:
     def __find_next_image(self, main, sub, direction):
         """
         :author: Ruth Neeßen
-        :param main: Integer, the first number in the image name
-        :param sub: Integer, the second number in the image name
+        :param main: Integer, the first number in the image name (plot number)
+        :param sub: Integer, the second number in the image name (1 ... 4, because we have 4 images at each plot)
         :param direction: String, next or prev (arrow to the left or to the right pressed)
-        determines the next or previous image depending on the direction
+        Determines the next or previous image depending on the direction
+        The mechanic only allows the direction next at this point
         """
         while True:
             if direction == 'next':
@@ -144,16 +153,15 @@ class ImageLoader:
             if self.__image_exists(main, sub):
                 self.data.main = main
                 self.data.sub = sub
-
                 return main, sub
 
-    def __load_landscape_image(self, path, max_width, max_height):
+    def __load_landscape_image(self, path):
         """
         :author: Ruth Neeßen
         :param path: String, the path to the image
-        :param max_width: Integer, the maximum width of the image
-        :param max_height: Integer, the maximum height of the image
-        The image is shown in landscape mode.
+        Determines the orientation of the image and rotates it
+        The image is shown in landscape mode, the size is set to fixed size to prevent
+        irregularities while drawing the lines afterwards
         """
         image = Image.open(path)
         try:
@@ -181,8 +189,8 @@ class ImageLoader:
         """
         :author: Ruth Neeßen
         :param img: the loaded image
-        Draws two vertical parallel lines and two horizontal parallel lines
-        Draws circles with number on the crossings of these lines
+        Draws two evenly distributed vertical parallel lines and two horizontal parallel lines
+        Draws circles with numbers on the crossings of these lines
         """
         draw = ImageDraw.Draw(img)
         width, height = img.size
@@ -228,25 +236,24 @@ class ImageLoader:
     def __show_image(self, main, sub):
         """
         :author: Ruth Neeßen
-        :param main: Integer, the first number in the image name
+        :param main: Integer, the first number in the image name (plot number)
         :param sub: Integer, the second number in the image name
-        Determines the max image size
         Puts the image object into the tinkers image label
         """
         path = os.path.join(self.img_folder, f"{main}_{sub}.jpg")
         self.root.title(f"Monitoring 2025 Soil Cover - {main}_{sub}.jpg")
-        max_width = self.root.winfo_screenwidth()
-        max_height = self.root.winfo_screenheight()
-        self.img_obj = self.__load_landscape_image(path, max_width, max_height)
+        self.img_obj = self.__load_landscape_image(path)
         self.img_label.config(image=self.img_obj)
         self.img_label.image = self.img_obj
 
     def __show_next_image(self, event=None):
         """
         :author: Ruth Neeßen
-        :param event:
-        Determines the next or previous image and updates current_main and current_sub
-        Triggers the display of the next or previous image depending on the key pressed
+        :param event: key object
+        If all images of one plot are analysed (length == 16), the dropdown data ist saved
+        and the next image is displayed
+        If there are still not analysed images, the previous or netx image is loaded (the mechanic only allows next images right noe though)
+        current_main and current_sub are updated
         """
         if self.data.get_total_lenght() == 16:
             self.data.save()
@@ -267,6 +274,11 @@ class ImageLoader:
                 self.reset_dropdown()
 
     def reset_dropdown(self):
+        """
+        :author: Ruth Neeßen
+        Resets the UIs dropdown and removes the callback temporarily to
+        prevent weird mixing with previously chosen options
+        """
         default_value = "select"
         for i, var in self.dropdown_vars.items():
             # temporarily remove callback

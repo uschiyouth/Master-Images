@@ -1,4 +1,8 @@
 from classes.Data import Data
 from classes.Image import ImageLoader
-data = Data()
-image = ImageLoader(data)
+"""
+:author: Ruth Neeßen
+Starting the Gui
+"""
+
+image = ImageLoader(Data())
