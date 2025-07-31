@@ -194,6 +194,7 @@ class ImageLoader:
         """
         draw = ImageDraw.Draw(img)
         width, height = img.size
+        height = height - 100 # take dropdown bar into account to distribute the lines evenly
         line_color = (0, 0, 0)
         line_width = 3
 
