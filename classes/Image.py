@@ -25,7 +25,8 @@ class ImageLoader:
 
         self.root = tk.Tk()
         self.root.title("Monitoring 2025 Soil Cover")
-        self.root.geometry("1900x1070")
+        self.root.geometry("1722x1030")
+        self.root.resizable(False, False)
 
         self.main_frame = tk.Frame(self.root)
         # put the main frame to the cell 0, 0
@@ -181,7 +182,7 @@ class ImageLoader:
         if image.height > image.width:
             image = image.rotate(90, expand=True)
 
-        image = image.resize((1900, 1070), Image.Resampling.LANCZOS)
+        image = image.resize((1722, 970), Image.Resampling.LANCZOS)
         img = self.__draw_lines(image)
         return ImageTk.PhotoImage(img)
 
@@ -194,7 +195,6 @@ class ImageLoader:
         """
         draw = ImageDraw.Draw(img)
         width, height = img.size
-        height = height - 100 # take dropdown bar into account to distribute the lines evenly
         line_color = (0, 0, 0)
         line_width = 3
 
