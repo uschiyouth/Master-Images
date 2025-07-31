@@ -106,7 +106,7 @@ class ImageLoader:
         selected_value = self.dropdown_vars[index].get()
         if selected_value == "select":
             return
-        self.data.set_field(selected_value)
+        self.data.set_field(index, selected_value)
 
     def __close(self, event=None):
         """
@@ -255,13 +255,13 @@ class ImageLoader:
         If there are still not analysed images, the previous or netx image is loaded (the mechanic only allows next images right noe though)
         current_main and current_sub are updated
         """
-        if self.data.get_total_lenght() == 16:
+        if self.data.get_total_length() == 16:
             self.data.save()
             next = self.__find_next_image(self.current_main, self.current_sub, 'next')
             self.current_main, self.current_sub = next
             self.__show_image(self.current_main, self.current_sub)
             self.reset_dropdown()
-        elif self.data.get_field_length() < 4:
+        elif not self.data.has_all_points():
             return
         else:
             if event.keycode == 114:

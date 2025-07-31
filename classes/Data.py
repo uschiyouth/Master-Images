@@ -13,25 +13,40 @@ class Data:
         self.excel = Excel()
         self.main = self.excel.get_to_fill()
         self.sub = 0
-        self.values = {1: [], 2: [], 3: [], 4: []}
+        self.values = {
+            1: [None, None, None, None],
+            2: [None, None, None, None],
+            3: [None, None, None, None],
+            4: [None, None, None, None]
+        }
 
-    def set_field(self, value):
+    def set_field(self, index, value):
         """
         :author: Ruth Neeßen
+        :param value: String, the chosen value from the dropdown
+        :param index: Integer, the index of the current dropdown
         Add the dropdown value at one point on the current picture
-        :param value:
         """
-        self.values[self.sub].append(value)
+        self.values[self.sub][index - 1] = value
 
-    def get_field_length(self):
+    def has_all_points(self):
         """
         :author: Ruth Neeßen
-        :return: the field length for the current picture -> 4 means: all 4 pictures from the plot are analysed
+        :return: checks if all values for the current picture are not None -> 4 values != None
         """
-        return len(self.values[self.sub])
+        return all(value is not None for value in self.values[self.sub])
 
-    def get_total_lenght(self):
-        return sum(len(inner_list) for inner_list in self.values.values())
+    def get_total_length(self):
+        """
+        :author: Ruth Neeßen
+        :return: returns the length of all elements that are not None
+        """
+        total = 0
+        for inner_list in self.values.values():
+            for value in inner_list:
+                if value is not None:
+                    total += 1
+        return total
 
     def save(self):
         """
@@ -49,6 +64,11 @@ class Data:
         self.excel.save_row(self.main, percentages)
         self.sub = 1
         self.main = self.main + 1
-        self.values = {1: [], 2: [], 3: [], 4: []}
+        self.values = {
+            1: [None, None, None, None],
+            2: [None, None, None, None],
+            3: [None, None, None, None],
+            4: [None, None, None, None]
+        }
 
 

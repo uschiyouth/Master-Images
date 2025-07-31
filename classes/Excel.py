@@ -41,6 +41,10 @@ class Excel:
         # because index = plot-1
         self.file.at[plot-1, 'plot'] = plot
         self.file.to_excel(self.file_path, index=False)
+        try:
+            self.file.to_excel(self.file_path, index=False)
+        except Exception as e:
+            print(f"Error while saving: {e}")
 
     def get_to_fill(self):
         """
